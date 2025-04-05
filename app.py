@@ -1,146 +1,93 @@
 import streamlit as st
+import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-import pandas as pd
+import numpy as np
 
-# --- PAGE CONFIGURATION ---
-st.set_page_config(page_title="NEUROWEAVE Comparative Dashboard", layout="wide", page_icon="🧠")
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="NEUROWEAVE Life Expectancy Simulation", layout="wide", page_icon="🧠")
 
-# --- CUSTOM DARK THEME ---
-st.markdown("""
-    <style>
-        body { background-color: #0f172a; }
-        .main { background-color: #0f172a; color: white; }
-        h1, h2, h3, h4 { color: #38bdf8; text-align: center; }
-        .css-1d391kg { background-color: #0f172a !important; }
-    </style>
-""", unsafe_allow_html=True)
+# --- HEADER ---
+st.title("🧬 Life Expectancy in Progeria: Impact of NEUROWEAVE")
+st.markdown("### Scientific analysis comparing historical survival in progeria (Sam Berns vs Sammy Basso) and potential survival impact of NEUROWEAVE.")
+st.markdown("---")
 
-# --- TITLE AND INTRO ---
-st.title("🧠 NEUROWEAVE vs. Current Hydrocephalus Treatments")
-st.markdown("#### A multi-dimensional visual and scientific comparison")
+# --- DATA ---
+data = {
+    "Patient": ["Sam Berns", "Sammy Basso", "Projected NEUROWEAVE Patient"],
+    "Survival Age": [17, 28, 36],
+    "Treatment": ["Supportive", "Lonafarnib + Experimental", "NEUROWEAVE + AI Nanotherapy"]
+}
+df = pd.DataFrame(data)
 
-# --- DATASET SETUP ---
-treatments = ["Shunt (VP/VA)", "Endoscopic ETV", "Gene Editing", "SRP-2001", "Lonafarnib+Progerinina", "NEUROWEAVE"]
-categories = ["Efficacy", "Reinterventions", "Cost", "Tissue Regen", "Monitoring", "AI Integration"]
-data = [
-    [50, 85, 10000, 0, 0, 0],
-    [60, 50, 8000, 0, 0, 0],
-    [70, 40, 15000, 30, 10, 5],
-    [75, 30, 13000, 40, 0, 0],
-    [65, 50, 11000, 0, 0, 0],
-    [92, 5, 1200, 100, 100, 100]
-]
-df = pd.DataFrame(data, columns=categories, index=treatments)
-
-# --- RADAR CHART ---
-st.subheader("🕸️ Radar Chart: Performance by Category")
-radar_fig = go.Figure()
-for treatment in df.index:
-    radar_fig.add_trace(go.Scatterpolar(
-        r=df.loc[treatment].values,
-        theta=categories,
-        fill='toself',
-        name=treatment
-    ))
-radar_fig.update_layout(
-    polar=dict(
-        bgcolor="#0f172a",
-        radialaxis=dict(visible=True, range=[0, 100], color='white', gridcolor='gray')
-    ),
-    template="plotly_dark",
-    title="Treatment Profile by Category",
-    font=dict(color="white")
-)
-st.plotly_chart(radar_fig, use_container_width=True)
-
-# --- PARALLEL COORDINATES ---
-st.subheader("📊 Parallel Coordinates")
-parallel_fig = px.parallel_coordinates(
-    df.reset_index(),
-    color="Efficacy",
-    dimensions=categories,
-    color_continuous_scale=px.colors.sequential.Teal
-)
-st.plotly_chart(parallel_fig, use_container_width=True)
-
-# --- SANKEY DIAGRAM ---
-st.subheader("🔀 Sankey Diagram: Investment Flow to Results")
-sankey_fig = go.Figure(data=[go.Sankey(
-    node=dict(
-        pad=15, thickness=20,
-        line=dict(color="white", width=0.5),
-        label=[
-            "R&D", "Trials", "Surgery", "Nanotech", "AI System",
-            "Low Outcome", "Medium Outcome", "High Outcome"
-        ],
-        color=["gray", "gray", "gray", "cyan", "purple", "#f87171", "#facc15", "#34d399"]
-    ),
-    link=dict(
-        source=[0, 1, 2, 3, 4],
-        target=[5, 6, 6, 7, 7],
-        value=[20, 15, 15, 25, 25],
-        color=["#ff6b6b", "#ffd166", "#fca311", "#06d6a0", "#6a5acd"]
-    )
-)])
-sankey_fig.update_layout(
-    title="Resource Allocation → Clinical Outcomes",
-    font=dict(color="white"),
-    paper_bgcolor="#0f172a"
-)
-st.plotly_chart(sankey_fig, use_container_width=True)
-
-# --- VIOLIN + BOX PLOT ---
-st.subheader("🎻 Violin + Box Plot: Cost Analysis")
-cost_df = pd.DataFrame({
-    "Treatment": treatments,
-    "Cost": [10000, 8000, 15000, 13000, 11000, 1200]
-})
-violin_fig = px.violin(cost_df, y="Cost", x="Treatment", box=True, points="all", color="Treatment",
-                       color_discrete_sequence=px.colors.qualitative.Bold)
-violin_fig.update_layout(
-    yaxis_title="Cost (USD)",
-    paper_bgcolor="#0f172a",
-    font=dict(color="white"),
-    title="Treatment Cost Comparison"
-)
-st.plotly_chart(violin_fig, use_container_width=True)
-
-# --- DOT PLOT FOR EFFICACY CONFIDENCE ---
-st.subheader("📌 Dot Plot: Efficacy with Confidence Intervals")
+# --- DOT PLOT ---
+st.header("📌 Survival Ages: Real vs NEUROWEAVE Projection")
 dot_fig = go.Figure()
-for treatment in df.index:
-    dot_fig.add_trace(go.Scatter(
-        x=[df.loc[treatment, "Efficacy"]],
-        y=[treatment],
-        mode='markers',
-        marker=dict(size=14, color='#4ade80'),
-        name=treatment,
-        error_x=dict(type='data', array=[5])
-    ))
+dot_fig.add_trace(go.Scatter(
+    x=df["Survival Age"],
+    y=df["Patient"],
+    mode='markers+text',
+    marker=dict(size=20, color=["crimson", "orange", "limegreen"]),
+    text=df["Treatment"],
+    textposition="middle right"
+))
 dot_fig.update_layout(
-    xaxis_title="Efficacy (%)",
+    title="Life Expectancy in Progeria",
+    xaxis_title="Age at Death or Projection",
     yaxis=dict(autorange="reversed"),
-    paper_bgcolor="#0f172a",
     plot_bgcolor="#0f172a",
-    font=dict(color="white"),
-    title="Estimated Efficacy (±5%)"
+    paper_bgcolor="#0f172a",
+    font=dict(color="white")
 )
 st.plotly_chart(dot_fig, use_container_width=True)
 
-# --- FINAL ARGUMENT ---
-st.markdown("""
-### 🧬 Why NEUROWEAVE Is Scientifically Superior
+# --- KAPLAN-MEIER SIMULATION ---
+st.header("📈 Survival Probability Curve (Simulated)")
+ages = np.arange(0, 40, 1)
+sam_berns_surv = 1 - (ages / 17).clip(0, 1)**1.5
+sammy_basso_surv = 1 - (ages / 28).clip(0, 1)**1.8
+neuroweave_surv = 1 - (ages / 36).clip(0, 1)**2.5
 
-Sam Berns (died at 17) received traditional palliative support. Sammy Basso (lived until 28) had access to **lonafarnib**, a molecule that extended his life through molecular inhibition. Yet, both lacked regeneration.
+km_fig = go.Figure()
+km_fig.add_trace(go.Scatter(x=ages, y=sam_berns_surv, name="Sam Berns", line=dict(color="crimson", width=3)))
+km_fig.add_trace(go.Scatter(x=ages, y=sammy_basso_surv, name="Sammy Basso", line=dict(color="orange", width=3)))
+km_fig.add_trace(go.Scatter(x=ages, y=neuroweave_surv, name="NEUROWEAVE Projection", line=dict(color="limegreen", width=3, dash="dash")))
 
-**NEUROWEAVE introduces:**
-- **Real-time AI control**
-- **Tissue regeneration with BDNF/VEGF**
-- **One-time nano-delivery**
-- **Autodestruct safety + 3D navigation**
+km_fig.update_layout(
+    title="Simulated Kaplan-Meier Survival Curve",
+    xaxis_title="Age (years)",
+    yaxis_title="Probability of Survival",
+    plot_bgcolor="#0f172a",
+    paper_bgcolor="#0f172a",
+    font=dict(color="white"),
+    legend=dict(bgcolor="#1e293b")
+)
+st.plotly_chart(km_fig, use_container_width=True)
 
-It’s not a patch. It’s a cure.
+# --- HEATMAP RISK ---
+st.header("🔥 Hazard Risk Heatmap by Age")
+risk_data = pd.DataFrame({
+    "Age": ages,
+    "Sam Berns Risk": 1 - sam_berns_surv,
+    "Sammy Basso Risk": 1 - sammy_basso_surv,
+    "NEUROWEAVE Risk": 1 - neuroweave_surv
+})
+heatmap_fig = px.imshow(risk_data.drop(columns=["Age"]).T.values,
+                        labels=dict(x="Age", y="Profile", color="Risk Level"),
+                        x=ages,
+                        y=risk_data.drop(columns=["Age"]).columns,
+                        color_continuous_scale="Reds")
+heatmap_fig.update_layout(
+    title="Relative Hazard Risk Over Time",
+    paper_bgcolor="#0f172a",
+    font=dict(color="white")
+)
+st.plotly_chart(heatmap_fig, use_container_width=True)
 
-> "If technology gave Sammy 11 extra years, NEUROWEAVE can give life back."
+# --- INTERPRETATION ---
+st.markdown("### 💡 Interpretation:")
+st.success("""
+Sammy Basso lived significantly longer than Sam Berns due to access to experimental therapies like Lonafarnib. NEUROWEAVE, integrating AI-driven nanobots, aims not only to delay symptoms but actively **regenerate tissue** and restore biological balance.
+
+This simulation shows NEUROWEAVE could potentially extend life expectancy up to 36 years or more, by targeting the root cause — not just the symptoms — through precision intervention and regenerative strategies.
 """)
