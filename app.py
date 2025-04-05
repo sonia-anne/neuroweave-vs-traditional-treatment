@@ -1,48 +1,96 @@
-import streamlit as st import pandas as pd import numpy as np import plotly.graph_objects as go import plotly.express as px from lifelines import KaplanMeierFitter, NelsonAalenFitter import streamlit_lottie as st_lottie import requests
+import streamlit as st
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+from lifelines import KaplanMeierFitter, NelsonAalenFitter
 
---- PAGE CONFIG ---
+# PAGE CONFIG
+st.set_page_config(page_title="NEUROWEAVE: Survival Dashboard", layout="wide", page_icon="🧠")
+st.title("🧬 Survival Comparison: Lonafarnib, Trials & NEUROWEAVE")
+st.markdown("### Scientific Visualizations on Life Expectancy for Progeria Treatments")
 
-st.set_page_config(page_title="NEUROWEAVE Survival Dashboard", layout="wide", page_icon="🧬")
+# DATASET
+data = pd.DataFrame({
+    'Patient': ['Sam Berns', 'Sammy Basso', 'NEUROWEAVE (Projected)'],
+    'Treatment': ['Lonafarnib', 'Lonafarnib + Cardio Trials', 'NEUROWEAVE'],
+    'Survival Time': [17, 28, 38],
+    'Event': [1, 1, 0],
+})
 
---- HEADER WITH LOTTIE ---
+# KAPLAN-MEIER
+kmf = KaplanMeierFitter()
+fig_km = go.Figure()
+for i, row in data.iterrows():
+    kmf.fit([row['Survival Time']], [row['Event']], label=row['Patient'])
+    km_df = kmf.survival_function_.reset_index()
+    fig_km.add_trace(go.Scatter(x=km_df['timeline'], y=km_df[row['Patient']],
+                                mode='lines+markers', name=row['Patient']))
+fig_km.update_layout(title="Kaplan-Meier Survival Curve",
+                     xaxis_title="Age (Years)", yaxis_title="Survival Probability",
+                     template="plotly_dark", font=dict(color="white"))
+st.plotly_chart(fig_km, use_container_width=True)
 
-st.title("\U0001f9ec Life Expectancy in Progeria: NEUROWEAVE vs Historical Interventions") st.markdown(""" This interactive dashboard compares Sam Berns, Sammy Basso, and a projected patient treated with NEUROWEAVE. It uses advanced medical statistics and visual tools to model the future of neuroregeneration in rare genetic diseases. """)
+# NELSON-AALEN
+naf = NelsonAalenFitter()
+fig_na = go.Figure()
+for i, row in data.iterrows():
+    naf.fit([row['Survival Time']], [row['Event']], label=row['Patient'])
+    ha_df = naf.cumulative_hazard_.reset_index()
+    fig_na.add_trace(go.Scatter(x=ha_df['timeline'], y=ha_df[row['Patient']],
+                                mode='lines+markers', name=row['Patient']))
+fig_na.update_layout(title="Nelson-Aalen Cumulative Hazard",
+                     xaxis_title="Age", yaxis_title="Cumulative Hazard",
+                     template="plotly_dark", font=dict(color="white"))
+st.plotly_chart(fig_na, use_container_width=True)
 
-def load_lottieurl(url): r = requests.get(url) if r.status_code != 200: return None return r.json()
+# DOT PLOT
+dot = go.Figure()
+dot.add_trace(go.Scatter(x=[17, 28, 38],
+                         y=["Sam Berns", "Sammy Basso", "NEUROWEAVE"],
+                         mode='markers+text',
+                         text=["17 yrs", "28 yrs", "38 yrs (Projected)"],
+                         marker=dict(size=[18, 25, 30], color=["red", "orange", "lime"]),
+                         textposition="top center"))
+dot.update_layout(title="Life Expectancy Comparison",
+                  xaxis_title="Years Lived", yaxis=dict(autorange="reversed"),
+                  template="plotly_dark", font=dict(color="white"))
+st.plotly_chart(dot, use_container_width=True)
 
-lottie_robot = load_lottieurl("https://lottie.host/1b4ccf44-56ed-4421-9c8c-2bb1556f93ed/3eaZ1BAwbn.json") st_lottie.st_lottie(lottie_robot, speed=1, height=200)
+# RISK HEATMAP
+risk_data = pd.DataFrame({
+    "Treatment": ["Shunt", "SRP-2001", "Lonafarnib", "NEUROWEAVE"],
+    "Max Age": [15, 20, 28, 38],
+    "Hazard Score": [0.9, 0.6, 0.4, 0.1]
+})
+heatmap = px.imshow(risk_data.set_index("Treatment"),
+                    color_continuous_scale="Viridis", text_auto=True)
+heatmap.update_layout(title="Hazard vs Life Expectancy",
+                      template="plotly_dark", font=dict(color="white"))
+st.plotly_chart(heatmap, use_container_width=True)
 
---- DATA ---
+# TREEMAP CAPABILITY
+cap_data = pd.DataFrame({
+    "Intervention": ["Lonafarnib", "Trials", "NEUROWEAVE"] * 3,
+    "Capability": ["Delays Progression", "Combo Repair", "Nanobot Regeneration",
+                   "No Monitoring", "Partial Monitoring", "Full AR-Guided Monitoring",
+                   "No AI", "Mild Control", "AI+Autodestruct+BDNF"],
+    "Score": [30, 50, 100, 0, 50, 100, 0, 25, 100]
+})
+treemap = px.treemap(cap_data, path=["Intervention", "Capability"], values="Score",
+                     color="Score", color_continuous_scale="Turbo")
+treemap.update_layout(title="Technological Depth Comparison",
+                      template="plotly_dark", font=dict(color="white"))
+st.plotly_chart(treemap, use_container_width=True)
 
-data = pd.DataFrame({ 'Patient': ['Sam Berns', 'Sammy Basso', 'Projected NEUROWEAVE Patient'], 'Treatment': ['Lonafarnib', 'Lonafarnib + Trials', 'NEUROWEAVE (Hypothetical)'], 'Survival Time': [17, 28, 38], 'Event': [1, 1, 0], 'Supportive Therapy': ['None', 'Cardiac Support', 'Neuroregenerative AI Nanobots'] })
+# EXPLANATION CARD
+with st.expander("📌 Why Did One Live Longer Than the Other?"):
+    st.markdown("""
+- **Sam Berns (17 yrs):** Used *Lonafarnib* — slowed cellular damage, no systemic repair.
+- **Sammy Basso (28 yrs):** Accessed cardiac therapies + combinations, received multidisciplinary care.
+- **NEUROWEAVE (38 yrs projected):** Delivers AI-guided nanorobots that detect, rebalance, regenerate brain systems in real time.
+    """)
+    st.success("NEUROWEAVE is not a delay mechanism — it's a regenerative cure engineered from biology + nanotechnology + ethical AI.")
 
---- Kaplan-Meier ---
-
-kmf = KaplanMeierFitter() fig_km = go.Figure() for index, row in data.iterrows(): kmf.fit([row['Survival Time']], [row['Event']], label=row['Patient']) surv_df = kmf.survival_function_.reset_index() fig_km.add_trace(go.Scatter(x=surv_df['timeline'], y=surv_df[row['Patient']], mode='lines+markers', name=row['Patient'], line=dict(width=3))) fig_km.update_layout(title="Kaplan-Meier Survival Curves", xaxis_title="Age (Years)", yaxis_title="Survival Probability", template="plotly_dark", plot_bgcolor="#0f172a", paper_bgcolor="#0f172a", font=dict(color="white")) st.plotly_chart(fig_km, use_container_width=True)
-
---- Nelson-Aalen Cumulative Hazard ---
-
-naf = NelsonAalenFitter() fig_naf = go.Figure() for index, row in data.iterrows(): naf.fit([row['Survival Time']], [row['Event']], label=row['Patient']) hazard_df = naf.cumulative_hazard_.reset_index() fig_naf.add_trace(go.Scatter(x=hazard_df['timeline'], y=hazard_df[row['Patient']], mode='lines+markers', name=row['Patient'], line=dict(width=3))) fig_naf.update_layout(title="Cumulative Hazard (Nelson-Aalen Estimation)", xaxis_title="Age (Years)", yaxis_title="Cumulative Hazard", template="plotly_dark", plot_bgcolor="#1e1e2f", paper_bgcolor="#1e1e2f", font=dict(color="white")) st.plotly_chart(fig_naf, use_container_width=True)
-
---- Risk Heatmap ---
-
-heatmap_df = pd.DataFrame({ "Treatment": ["Shunt", "SRP-2001", "Lonafarnib", "NEUROWEAVE"], "Expected Max Age": [15, 20, 28, 38], "Risk Level": [0.9, 0.6, 0.4, 0.1] }) heatmap = px.imshow(heatmap_df.set_index("Treatment")[["Expected Max Age", "Risk Level"]], text_auto=True, color_continuous_scale="Viridis", title="Expected Survival & Risk Level") heatmap.update_layout(paper_bgcolor="#0f172a", plot_bgcolor="#0f172a", font=dict(color='white')) st.plotly_chart(heatmap, use_container_width=True)
-
---- Dot Plot ---
-
-dot_fig = go.Figure() dot_fig.add_trace(go.Scatter(x=[17, 28, 38], y=["Sam Berns", "Sammy Basso", "NEUROWEAVE"], mode='markers+text', marker=dict(size=[18, 24, 30], color=['red', 'orange', 'limegreen']), text=["Lonafarnib", "Lonafarnib+Support", "Neuro-AI Regeneration"], textposition="top center")) dot_fig.update_layout(title="Expected Lifespan Based on Intervention", xaxis_title="Years of Life", yaxis=dict(autorange='reversed'), paper_bgcolor="#0f172a", plot_bgcolor="#0f172a", font=dict(color="white")) st.plotly_chart(dot_fig, use_container_width=True)
-
---- Explanation ---
-
-with st.expander("\U0001f52c Scientific Explanation"): st.markdown(""" Why did Sammy live longer than Sam? - Sammy received additional cardiac therapies and had continuous Italian support. - Sam relied solely on Lonafarnib, which slowed but did not stop progression.
-
-**Why NEUROWEAVE could exceed both:**
-- Combines **real-time detection**, **AI correction**, and **neuroregeneration**.
-- Designed to **reverse** cellular damage, not just delay symptoms.
-- Projects +10 years of survival by restoring and restructuring brain function.
-""")
-
---- Footer ---
-
-st.markdown("---") st.success("NEUROWEAVE is not a drug. It’s a platform for rewiring survival.") st.caption("Created by Annette — Global Young Scientist from Ecuador. \U0001f9e0")
-
+# FOOTER
+st.markdown("---")
+st.caption("Engineered by Annette — Young Scientific Leader from Ecuador. Powered by Science.")
